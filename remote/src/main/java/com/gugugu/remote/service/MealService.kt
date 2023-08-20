@@ -18,7 +18,6 @@ interface MealService {
 
     @GET(GuguguUrl.Meal.SCHOOL)
     suspend fun school(
-        @Query("local") local: String,
         @Query("school") school: String
     ): BaseResponse<List<MealSchoolResponse>>
 }

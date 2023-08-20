@@ -9,7 +9,6 @@ interface MealRepository {
     ): List<MealGet>
 
     suspend fun getSchool(
-        local: String,
         school: String
     ): List<MealSearchSchool>
 

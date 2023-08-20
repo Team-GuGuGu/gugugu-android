@@ -8,13 +8,11 @@ class GetSchoolUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(param: Param) = kotlin.runCatching {
         mealRepository.getSchool(
-            local = param.local,
             school = param.school
         )
     }
 
     data class Param(
-        val local: String,
         val school: String
     )
 }

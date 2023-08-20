@@ -14,8 +14,8 @@ class MealRemoteDataSourceImpl @Inject constructor(
         mealService.get(local, school, date).data.toModels()
     }
 
-    override suspend fun getSchool(local: String, school: String) = guguguApiCall {
-        mealService.school(local, school).data.toModels()
+    override suspend fun getSchool(school: String) = guguguApiCall {
+        mealService.school(school).data.toModels()
     }
 
 }

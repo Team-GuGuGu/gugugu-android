@@ -9,7 +9,8 @@ import com.gugugu.remote.response.meal.MealSchoolResponse
 internal fun MealSchoolResponse.toModel() =
     MealSearchSchool(
         schoolName = schoolName,
-        schoolCode = schoolCode
+        schoolCode = schoolCode,
+        local = local
     )
 
 @JvmName("MealSchoolResponseMapper")

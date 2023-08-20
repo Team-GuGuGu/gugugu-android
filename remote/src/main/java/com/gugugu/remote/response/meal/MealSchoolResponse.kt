@@ -6,5 +6,7 @@ data class MealSchoolResponse(
     @field:SerializedName("schoolCode")
     val schoolCode: String,
     @field:SerializedName("schoolName")
-    val schoolName: String
+    val schoolName: String,
+    @field:SerializedName("local")
+    val local: String
 )

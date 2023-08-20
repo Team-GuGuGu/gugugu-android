@@ -20,8 +20,8 @@ class MealRepositoryImpl @Inject constructor(
         }
 
 
-    override suspend fun getSchool(local: String, school: String) =
-        remote.getSchool(local, school)
+    override suspend fun getSchool(school: String) =
+        remote.getSchool(school)
 
     override suspend fun createSchool(local: String, schoolCode: String) =
         cache.createSchool(
