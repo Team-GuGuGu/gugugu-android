@@ -6,6 +6,8 @@ interface MealCacheDataSource {
 
     suspend fun getSchool(): MealLocalSchool
 
+    suspend fun deleteSchool()
+
     suspend fun createSchool(
         local: String,
         schoolCode: String

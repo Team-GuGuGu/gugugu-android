@@ -24,8 +24,10 @@ class MealRepositoryImpl @Inject constructor(
         remote.getSchool(school)
 
     override suspend fun createSchool(local: String, schoolCode: String) =
-        cache.createSchool(
-            local = local,
-            schoolCode = schoolCode
-        )
+        cache.deleteSchool().let {
+            cache.createSchool(
+                local = local,
+                schoolCode = schoolCode
+            )
+        }
 }

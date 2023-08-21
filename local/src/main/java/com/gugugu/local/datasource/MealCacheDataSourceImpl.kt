@@ -12,8 +12,11 @@ class MealCacheDataSourceImpl @Inject constructor(
     override suspend fun getSchool() =
         mealDao.getSchool().toModel()
 
+    override suspend fun deleteSchool() =
+        mealDao.deleteSchool()
+
     override suspend fun createSchool(local: String, school: String) =
-        mealDao.insertMeal(
+        mealDao.insertSchool(
             MealEntity(
                 local = local,
                 school = school

@@ -1,6 +1,7 @@
 package com.gugugu.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import com.gugugu.local.entity.MealEntity
@@ -14,6 +15,9 @@ interface MealDao {
     suspend fun getSchool(): MealEntity
 
     @Insert
-    suspend fun insertMeal(entity: MealEntity)
+    suspend fun insertSchool(entity: MealEntity)
+
+    @Query("DELETE FROM ${GuguguTable.Meal}")
+    suspend fun deleteSchool()
 
 }
