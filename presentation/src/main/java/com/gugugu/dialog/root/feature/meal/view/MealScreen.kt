@@ -1,7 +1,11 @@
-package com.gugugu.dialog.root.feature.meal
+package com.gugugu.dialog.root.feature.meal.view
 
 import android.util.Log
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,15 +23,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,20 +45,33 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.gugugu.dialog.R
+import com.gugugu.dialog.root.feature.meal.mvi.MealSideEffect
+import com.gugugu.dialog.root.feature.meal.viewmodel.MealViewModel
 import com.gugugu.dialog.ui.theme.Body1_5
 import com.gugugu.dialog.ui.theme.BoldBody1_5
 import com.gugugu.dialog.ui.theme.BoldBody2
 import com.gugugu.dialog.ui.theme.GuguguTheme
 import com.gugugu.dialog.ui.theme.HeadLine1
 import com.gugugu.dialog.ui.theme.SemiBoldBody2
+import com.gugugu.dialog.util.getDate
+import com.gugugu.dialog.util.getStringDate
 import com.gugugu.dialog.util.guguguClickable
+import com.gugugu.dialog.util.nowDay
 import com.gugugu.dialog.util.toDp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
+import java.time.LocalDate
 
 private fun getMealName(value: Int): String =
     when(value) {
@@ -61,139 +82,203 @@ private fun getMealName(value: Int): String =
 
 @Composable
 @Preview(showBackground = true)
-fun MealScreen() {
+fun MealScreen(
+    viewModel: MealViewModel = hiltViewModel()
+) {
 //    MovingViewCoveringButtons()
+    val state = viewModel.collectAsState().value
+    val context = LocalContext.current
+    viewModel.collectSideEffect {
+        when(it) {
+            is MealSideEffect.ToastError -> {
+                Toast.makeText(context, it.throwable.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     var nowMeal by remember { mutableStateOf(0) }
+    var date by remember { mutableStateOf(nowDay()) }
     val mealName = getMealName(nowMeal)
-    GuguguTheme {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 22.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Image(
-                    modifier = Modifier.size(40.dp),
-                    painter = painterResource(id = R.drawable.ic_arrow_left),
-                    contentDescription = "날짜 전날로 넘어가기"
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Surface(
-                    shape = GuguguTheme.shape.large,
-                    border = BorderStroke(1.dp, GuguguTheme.color.Black),
-                    color = GuguguTheme.color.White,
-                ) {
-                    Body1_5(
-                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
-                        text = "2023년 8월 28일"
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Image(
-                    modifier = Modifier.size(40.dp),
-                    painter = painterResource(id = R.drawable.ic_arrow_right),
-                    contentDescription = "날짜 다음날로 넘어가기"
-                )
-            }
-            Spacer(modifier = Modifier.height(22.dp))
-            Row(
-                modifier = Modifier.padding(horizontal = 46.dp)
-            ) {
-                MovingButton {
-                    nowMeal = it
-                }
-            }
-            Spacer(modifier = Modifier.height(52.dp))
+    var nowDayPosition by remember { mutableStateOf(0) }
+    var test by remember { mutableStateOf(false) }
+    LaunchedEffect(key1 = true) {
+        Log.d("TAG", "MealScreen: call")
+//        viewModel.schoolSave()
+        viewModel.load(date.getDate())
+    }
+    LaunchedEffect(key1 = date) {
+        if (test) {
+            viewModel.load(date.getDate())
+//            withContext(Dispatchers.Main) {
+//                Log.d("TAG", "MealScreen: 날짜 변경")
+//                nowDayPosition = 0
+//            }
+        }
+        test = true
+    }
+//    AnimatedVisibility(
+//        visible = state.loading,
+//        enter = fadeIn(),
+//        exit = fadeOut()
+//    ) {
+//
+//    }
+    AnimatedVisibility(
+        visible = state.loading.not(),
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        GuguguTheme {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .border(1.dp, GuguguTheme.color.Black, GuguguTheme.shape.middle)
-                    .clip(GuguguTheme.shape.middle)
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxSize()
+                    .background(Color(0xFFEFECEC))
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 15.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 22.dp),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Image(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .guguguClickable {
+//                                nowDayPosition = 1
+                                date = date.minusDays(1)
+                                nowDayPosition = 0
+                            },
+                        painter = painterResource(id = R.drawable.ic_arrow_left),
+                        contentDescription = "날짜 전날로 넘어가기"
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Surface(
+                        shape = GuguguTheme.shape.large,
+                        border = BorderStroke(1.dp, GuguguTheme.color.Black),
+                        color = GuguguTheme.color.White,
                     ) {
-                        Image(
-                            modifier = Modifier.size(60.dp),
-                            painter = painterResource(id =
+                        Body1_5(
+                            modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+                            text = date.getStringDate()?: ""
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Image(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .guguguClickable {
+//                                nowDayPosition = 2
+                                date = date.plusDays(1)
+                                nowDayPosition = 0
+                            },
+                        painter = painterResource(id = R.drawable.ic_arrow_right),
+                        contentDescription = "날짜 다음날로 넘어가기"
+                    )
+                }
+                Spacer(modifier = Modifier.height(22.dp))
+                Row(
+                    modifier = Modifier.padding(horizontal = 46.dp)
+                ) {
+                    MovingButton(
+                        nowPosition = nowDayPosition
+                    ) {
+                        nowMeal = it
+                        nowDayPosition = it
+                    }
+                }
+                Spacer(modifier = Modifier.height(52.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .border(1.dp, GuguguTheme.color.Black, GuguguTheme.shape.middle)
+                        .clip(GuguguTheme.shape.middle)
+                        .background(GuguguTheme.color.White)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 15.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                modifier = Modifier.size(60.dp),
+                                painter = painterResource(id =
                                 when(nowMeal) {
                                     0 -> R.drawable.ic_sun
                                     1 -> R.drawable.ic_launch
                                     else -> R.drawable.ic_moon
                                 }
-                            ),
-                            contentDescription = "$mealName 아이콘"
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        HeadLine1(text = mealName)
+                                ),
+                                contentDescription = "$mealName 아이콘"
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            HeadLine1(text = mealName)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        BoldBody1_5(text = "오늘의 ${mealName}은?")
+                        Spacer(modifier = Modifier.height(9.dp))
+                        SemiBoldBody2(text = state.mealData[nowMeal].menu)
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    BoldBody1_5(text = "오늘의 ${mealName}은?")
-                    Spacer(modifier = Modifier.height(9.dp))
-                    SemiBoldBody2(text = "치즈닭갈비주먹밥 \n깍두기 \n*고래밥시리얼+우유 \n배도라지주스 \n감자토마토그라탕")
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
-            }
 
-            Spacer(modifier = Modifier.height(25.dp))
-            //칼로리
+                Spacer(modifier = Modifier.height(25.dp))
+                //칼로리
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .border(1.dp, GuguguTheme.color.Black, GuguguTheme.shape.middle)
-                    .clip(GuguguTheme.shape.middle)
-            ) {
-               Row(
-                   modifier = Modifier.padding(top = 29.dp, bottom = 26.dp)
-               ) {
-                   Spacer(modifier = Modifier.width(14.dp))
-                   Image(
-                       modifier = Modifier.size(60.dp),
-                       painter = painterResource(id = R.drawable.ic_fire),
-                       contentDescription = "칼로리 아이콘"
-                   )
-                   Spacer(modifier = Modifier.width(2.dp))
-                   Column {
-                       HeadLine1(text = "${mealName}의 칼로리는?")
-                       Spacer(modifier = Modifier.height(1.dp))
-                       HeadLine1(text = "482.4 Kcal")
-                   }
-               }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            //알러지
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .border(1.dp, GuguguTheme.color.Black, GuguguTheme.shape.middle)
-                    .clip(GuguguTheme.shape.middle)
-            ) {
                 Row(
-                    modifier = Modifier.padding(top = 29.dp, bottom = 26.dp, start = 14.dp, end = 14.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .border(1.dp, GuguguTheme.color.Black, GuguguTheme.shape.middle)
+                        .clip(GuguguTheme.shape.middle)
+                        .background(GuguguTheme.color.White)
+
                 ) {
-                    Image(
-                        modifier = Modifier.size(60.dp),
-                        painter = painterResource(id = R.drawable.ic_hand),
-                        contentDescription = "알러지 아이콘"
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Column {
-                        HeadLine1(text = "알러지 정보는?")
-                        Spacer(modifier = Modifier.height(1.dp))
-                        BoldBody2(text = "②우유 ⑤대두 ⑥밀 ⑨새우 ⑬아황산류 ⑮닭고기")
+                    Row(
+                        modifier = Modifier.padding(top = 29.dp, bottom = 26.dp)
+                    ) {
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Image(
+                            modifier = Modifier.size(60.dp),
+                            painter = painterResource(id = R.drawable.ic_fire),
+                            contentDescription = "칼로리 아이콘"
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Column {
+                            HeadLine1(text = "${mealName}의 칼로리는?")
+                            Spacer(modifier = Modifier.height(1.dp))
+                            HeadLine1(text = state.mealData[nowMeal].calorie)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                //알러지
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = GuguguTheme.shape.middle,
+                    color = GuguguTheme.color.White,
+                    border = BorderStroke(1.dp, GuguguTheme.color.Black)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(top = 29.dp, bottom = 26.dp, start = 14.dp, end = 14.dp)
+                    ) {
+                        Image(
+                            modifier = Modifier.size(60.dp),
+                            painter = painterResource(id = R.drawable.ic_hand),
+                            contentDescription = "알러지 아이콘"
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Column {
+                            HeadLine1(text = "알러지 정보는?")
+                            Spacer(modifier = Modifier.height(1.dp))
+                            BoldBody2(text = state.mealData[nowMeal].allergy)
+                        }
                     }
                 }
             }
@@ -204,6 +289,7 @@ fun MealScreen() {
 
 @Composable
 fun MovingButton(
+    nowPosition: Int = 0,
     action: (Int) -> Unit
 ) {
     val cornerShape = 100.dp
@@ -225,10 +311,33 @@ fun MovingButton(
         }
     )
     var nowImage by remember { mutableStateOf(R.drawable.ic_sun) }
+    LaunchedEffect(key1 = nowPosition) {
+        when (nowPosition) {
+            0 -> {
+                action(nowPosition)
+                viewPosition = btn1
+                nowImage = R.drawable.ic_sun
+            }
+            1 -> {
+                action(nowPosition)
+                viewPosition = btn2
+                nowImage = R.drawable.ic_launch
+            }
+            else -> {
+                action(nowPosition)
+                viewPosition = btn3
+                nowImage = R.drawable.ic_moon
+            }
+        }
+    }
     Column(
         modifier = Modifier
     ) {
-        Surface(modifier = Modifier) {
+        Surface(
+            modifier = Modifier,
+            shape = GuguguTheme.shape.middle,
+            color = Color(0xFFEFECEC)
+        ) {
             Box {
                 Row(
                     modifier = Modifier
@@ -246,8 +355,8 @@ fun MovingButton(
                             .clip(RoundedCornerShape(cornerShape, 0.dp, 0.dp, cornerShape))
                             .guguguClickable {
                                 action(0)
-                                viewPosition = btn1
-                                nowImage = R.drawable.ic_sun
+//                                viewPosition = btn1
+//                                nowImage = R.drawable.ic_sun
                             }
                             .background(Color(0xFFE4E4E4)),
                         contentAlignment = Alignment.Center
@@ -276,8 +385,8 @@ fun MovingButton(
                             }
                             .guguguClickable {
                                 action(1)
-                                viewPosition = btn2
-                                nowImage = R.drawable.ic_launch
+//                                viewPosition = btn2
+//                                nowImage = R.drawable.ic_launch
                             }
                             .clip(RoundedCornerShape(0.dp, 0.dp, 0.dp, 0.dp))
                             .background(Color(0xFFE4E4E4)),
@@ -300,8 +409,8 @@ fun MovingButton(
                             }
                             .guguguClickable {
                                 action(2)
-                                viewPosition = btn3
-                                nowImage = R.drawable.ic_moon
+//                                viewPosition = btn3
+//                                nowImage = R.drawable.ic_moon
                             }
                             .clip(RoundedCornerShape(0.dp, cornerShape, cornerShape, 0.dp))
                             .background(Color(0xFFE4E4E4)),

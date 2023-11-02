@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -34,6 +35,18 @@ internal fun String.toTime(): String =
         "dinner" -> "저녁"
         else -> "알 수 없음"
     }
+
+fun nowDay() : LocalDate {
+    val currentTime = LocalTime.now()
+
+    val currentDate = if (currentTime.isAfter(LocalTime.of(19, 0))) {
+        LocalDate.now().plusDays(1)
+    } else {
+        LocalDate.now()
+    }
+
+    return currentDate
+}
 
 fun getDate(): String {
     val pattern = "yyyyMMdd"
@@ -49,6 +62,13 @@ fun getDate(): String {
     val formatter = DateTimeFormatter.ofPattern(pattern)
 
     return currentDate.format(formatter)
+}
+
+fun LocalDate.getDate(): String {
+    val pattern = "yyyyMMdd"
+    val formatter = DateTimeFormatter.ofPattern(pattern)
+
+    return this.format(formatter)
 }
 
 internal fun Int.toDp(density: Density): Dp {
@@ -241,4 +261,9 @@ fun Modifier.innerShadow(
         frameworkPaint.xfermode = null
         frameworkPaint.maskFilter = null
     }
+}
+
+internal fun LocalDate.getStringDate(): String? {
+    val formatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")
+    return this.format(formatter)
 }
