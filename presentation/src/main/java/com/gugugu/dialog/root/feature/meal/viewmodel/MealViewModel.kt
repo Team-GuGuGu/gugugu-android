@@ -32,7 +32,7 @@ class MealViewModel @Inject constructor(
         ).onSuccess {
             Log.d("TAG", "load: $it")
             reduce {
-                state.copy(x
+                state.copy(
                     loading = false,
                     mealData = it
                 )
