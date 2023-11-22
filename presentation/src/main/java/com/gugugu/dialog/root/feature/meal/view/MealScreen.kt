@@ -1,6 +1,7 @@
 package com.gugugu.dialog.root.feature.meal.view
 
 import android.util.Log
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
@@ -10,6 +11,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,10 +42,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
@@ -80,6 +87,7 @@ private fun getMealName(value: Int): String =
         else -> "저녁"
     }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 @Preview(showBackground = true)
 fun MealScreen(
@@ -100,6 +108,8 @@ fun MealScreen(
     val mealName = getMealName(nowMeal)
     var nowDayPosition by remember { mutableStateOf(0) }
     var test by remember { mutableStateOf(false) }
+
+    var cursor by remember { mutableStateOf(0f) }
     LaunchedEffect(key1 = true) {
         Log.d("TAG", "MealScreen: call")
 //        viewModel.schoolSave()
@@ -115,6 +125,10 @@ fun MealScreen(
         }
         test = true
     }
+
+//    LaunchedEffect(key1 = cursor) {
+//        Log.d("TAG", "MealScreen: $cursor")
+//    }
 //    AnimatedVisibility(
 //        visible = state.loading,
 //        enter = fadeIn(),
@@ -123,6 +137,44 @@ fun MealScreen(
 //
 //    }
     AnimatedVisibility(
+        modifier = Modifier
+            .pointerInteropFilter {
+                when(it.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        cursor = it.x
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        Log.d("TAG", "MealScreen: ${cursor-it.x}")
+                        if (cursor-it.x <= -200) {
+                            if (nowMeal != 2) {
+                                nowMeal++
+                                nowDayPosition++
+                            }
+                        } else if (cursor-it.x > 200) {
+                            if (nowMeal > 0) {
+                                nowMeal--
+                                nowDayPosition--
+                            }
+                        }
+                    }
+                    else -> false
+                }
+                true
+            }
+//                awaitEachGesture {
+//
+//                    val down = awaitFirstDown()
+//                    val originalPressPoint = down.position
+//                    Log.d("Compose", "화면을 누른 위치: ${originalPressPoint.x}, ${originalPressPoint.y}")
+//                    awaitEachGesture {
+//
+//                    }
+//                    val up = awaitFirstDown()
+//                    val releasePoint = up.position
+//                    Log.d("Compose", "화면에서 땐 위치: ${releasePoint.x}, ${releasePoint.y}")
+//
+//                }
+        ,
         visible = state.loading.not(),
         enter = fadeIn(),
         exit = fadeOut()
