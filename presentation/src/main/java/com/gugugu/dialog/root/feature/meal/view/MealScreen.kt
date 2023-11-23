@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,8 +48,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
@@ -94,8 +98,10 @@ fun MealScreen(
     viewModel: MealViewModel = hiltViewModel()
 ) {
 //    MovingViewCoveringButtons()
+
     val state = viewModel.collectAsState().value
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     viewModel.collectSideEffect {
         when(it) {
             is MealSideEffect.ToastError -> {
@@ -138,29 +144,62 @@ fun MealScreen(
 //    }
     AnimatedVisibility(
         modifier = Modifier
-            .pointerInteropFilter {
-                when(it.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        cursor = it.x
+            .pointerInput(Unit) {
+//                when(this)
+                while (true) {
+                    var pointerId: PointerId? = null
+                    awaitPointerEventScope {
+                        val down = awaitFirstDown()
+                        val originalPressPoint = down.position
+                        pointerId = down.id
+                        Log.d("Compose", "화면을 누른 위치: ${originalPressPoint.x}, ${originalPressPoint.y}")
                     }
-                    MotionEvent.ACTION_UP -> {
-                        Log.d("TAG", "MealScreen: ${cursor-it.x}")
-                        if (cursor-it.x <= -200) {
-                            if (nowMeal != 2) {
-                                nowMeal++
-                                nowDayPosition++
-                            }
-                        } else if (cursor-it.x > 200) {
-                            if (nowMeal > 0) {
-                                nowMeal--
-                                nowDayPosition--
+                    awaitPointerEventScope {
+                        var test = 0f
+                        horizontalDrag(pointerId!!) { change ->
+                            // 오프셋 이후 포지션을 기록한다.
+                            test += change.positionChange().x
+                        }
+                        Log.d("TAG", "MealScreen: $test")
+                        coroutineScope.launch {
+                            if (test <= -200) {
+                                if (nowMeal > 0) {
+                                    nowMeal--
+                                    nowDayPosition--
+                                }
+                            } else if (test > 200) {
+                                if (nowMeal != 2) {
+                                    nowMeal++
+                                    nowDayPosition++
+                                }
                             }
                         }
                     }
-                    else -> false
                 }
-                true
             }
+//            .pointerInteropFilter {
+//                when(it.action) {
+//                    MotionEvent.ACTION_DOWN -> {
+//                        cursor = it.x
+//                    }
+//                    MotionEvent.ACTION_UP -> {
+//                        Log.d("TAG", "MealScreen: ${cursor-it.x}")
+//                        if (cursor-it.x <= -200) {
+//                            if (nowMeal != 2) {
+//                                nowMeal++
+//                                nowDayPosition++
+//                            }
+//                        } else if (cursor-it.x > 200) {
+//                            if (nowMeal > 0) {
+//                                nowMeal--
+//                                nowDayPosition--
+//                            }
+//                        }
+//                    }
+//                    else -> true
+//                }
+//                true
+//            }
 //                awaitEachGesture {
 //
 //                    val down = awaitFirstDown()
